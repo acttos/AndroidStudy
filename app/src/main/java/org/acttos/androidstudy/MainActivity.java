@@ -25,10 +25,24 @@ public class MainActivity extends AppCompatActivity {
         downButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d(TAG, "DownButton clicked");
+                Log.d(TAG, "DownButton clicked.");
             }
         });
 
+        Button leftButton = this.findViewById(R.id.left_button);
+        leftButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "LeftButton clicked.");
+            }
+        });
 
+        Button rightButton = this.findViewById(R.id.right_button);
+        rightButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "RightButton clicked.");
+            }
+        });
     }
 }
