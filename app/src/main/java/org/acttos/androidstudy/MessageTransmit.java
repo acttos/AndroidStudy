@@ -19,8 +19,8 @@ public class MessageTransmit implements Runnable {
 
     private static final String TAG = "MessageTransmit";
 
-    private static final String HOST = "111.207.81.319";
-    private static final int PORT = 23456;
+    private static final String HOST = "111.207.81.208";
+    private static final int PORT = 12345;
 
     private Socket mSocket;
     private BufferedReader mReader = null;

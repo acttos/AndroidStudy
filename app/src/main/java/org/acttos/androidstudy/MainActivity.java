@@ -3,6 +3,7 @@ package org.acttos.androidstudy;
 import android.nfc.Tag;
 import android.os.Handler;
 import android.os.Message;
+import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -15,12 +16,19 @@ import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
     final static String TAG = "MainActivity";
-    MessageTransmit mMessageTransmit;
+    private MessageTransmit mMessageTransmit;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
+                .detectDiskReads().detectDiskWrites().detectNetwork()
+                .penaltyLog().build());
+        StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder()
+                .detectLeakedSqlLiteObjects().detectLeakedClosableObjects()
+                .penaltyLog().penaltyDeath().build());
 
         mMessageTransmit = new MessageTransmit();
         new Thread(mMessageTransmit).start();
@@ -29,10 +37,8 @@ public class MainActivity extends AppCompatActivity {
         connectButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Message message = Message.obtain();
-                message.obj = String.format("%d", new Date().getTime());
 
-                mMessageTransmit.mRecvHandler.sendMessage(message);
+                new Thread(mMessageSender).start();
             }
         });
 
@@ -41,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "UpButton clicked.");
+                new Thread(mMessageSender).start();
             }
         });
 
@@ -49,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "DownButton clicked.");
+                new Thread(mMessageSender).start();
             }
         });
 
@@ -57,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "LeftButton clicked.");
+                new Thread(mMessageSender).start();
             }
         });
 
@@ -65,10 +74,31 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "RightButton clicked.");
+                new Thread(mMessageSender).start();
+            }
+        });
+
+        Button catchButton = this.findViewById(R.id.catch_button);
+        catchButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.d(TAG, "Catch Button Clicked.");
+                new Thread(mMessageSender).start();
             }
         });
     }
 
+    Runnable mMessageSender = new Runnable(){
+        @Override
+        public void run() {
+            // TODO: http request.
+            Message message = Message.obtain();
+            message.obj = String.format("%d", new Date().getTime());
+
+            mMessageTransmit.mRecvHandler.sendMessage(message);
+
+        }
+    };
 
     public static Handler mHandler = new Handler() {
         @Override
