@@ -1,33 +1,36 @@
 package org.acttos.androidstudy.bean;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 /**
  * Created by 天才猪 on 2018/1/14.
  */
 
-/**
- * 入参：
- 名称	类型	必传	描述
- protocol
- string
-
- 是	协议版本
- event	i32	是	指令
- token	string	是	用户token
- roomId	i64	是	房间号
- 出参：
- 名称	类型	必传	描述
- protocol	string	是	协议版本
- event	i32	是	指令
- status	i32	是	0成功，1失败，2娃娃机故障
- catchCount	i32	否	event=106时返回，抓到wawa数量，0为抓中 1抓中一只
-
- */
 public class ControlCommand {
     private String protocol;
     private ControlCommandEvent event;
     private String token;
     private long roomId;
     private int status;
+    private int catchCount;
+
+    public ControlCommand(String protocol, ControlCommandEvent event, String token, long roomId, int status, int catchCount) {
+        this.protocol = protocol;
+        this.event = event;
+        this.token = token;
+        this.roomId = roomId;
+        this.status = status;
+        this.catchCount = catchCount;
+    }
+
+    public String getProtocol() {
+        return protocol;
+    }
+
+    public void setProtocol(String protocol) {
+        this.protocol = protocol;
+    }
 
     public ControlCommandEvent getEvent() {
         return event;
@@ -69,13 +72,23 @@ public class ControlCommand {
         this.catchCount = catchCount;
     }
 
-    private int catchCount;
 
-    public String getProtocol() {
-        return protocol;
+    public String JSONString() {
+        JSONObject object = new JSONObject();
+
+        try {
+            object.put("protocol", this.protocol);
+            object.put("event", this.event);
+            object.put("token", this.token);
+            object.put("roomId", this.roomId);
+            object.put("status", this.status);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        return object.toString();
     }
-
-    public void setProtocol(String protocol) {
-        this.protocol = protocol;
+    public static ControlCommand generateCommand(String token, long roomId, ControlCommandEvent event) {
+        return new ControlCommand("1.0", event, token, roomId, -1, -1);
     }
 }
