@@ -14,4 +14,9 @@ public enum ControlCommandEvent {
         this.name = name;
         this.code = code;
     }
+
+    @Override
+    public String toString() {
+        return "NAME:" + this.name + ", CODE:" + this.code;
+    }
 }
