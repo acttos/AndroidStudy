@@ -5,18 +5,19 @@ package org.acttos.androidstudy.bean;
  */
 
 public enum ControlCommandEvent {
-    Heartbeat("Heartbeat", 0), Begin("Begin", 100), Forward("Forward", 101), Backward("Backward", 102), Left("Left", 103), Right("Right", 104), Catch("Catch", 105), CatchResult("CatchResult", 106), Quit("Quit", 107), Error("Error", 108);
+    Heartbeat(0), Begin(100), Forward(101), Backward(102), Left(103), Right(104), Catch(105), CatchResult(106), Quit(107), Error(108), None(-1);
 
-    private String name;
     private int code;
 
-    private ControlCommandEvent(String name, int code) {
-        this.name = name;
+    ControlCommandEvent(int code) {
         this.code = code;
     }
 
-    @Override
-    public String toString() {
-        return "NAME:" + this.name + ", CODE:" + this.code;
+    public int getCode() {
+        return this.code;
+    }
+
+    public String getName() {
+        return this.name();
     }
 }
