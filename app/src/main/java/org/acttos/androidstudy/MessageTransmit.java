@@ -7,6 +7,7 @@ import android.util.Log;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
@@ -20,12 +21,13 @@ public class MessageTransmit implements Runnable {
 
     private static final String TAG = "MessageTransmit";
 
-    private static final String HOST = "192.8.205.192";//"111.207.81.208";//;
-    private static final int PORT = 8090;//12345;//;
+    private static final String HOST = "111.207.81.208";
+    private static final int PORT = 12345;
 
     private Socket mSocket;
     private BufferedReader mReader;
-    private OutputStream mWriter;
+    private InputStream mInputStream;
+    private OutputStream mOutputStream;
 
     @Override
     public void run() {
@@ -36,14 +38,12 @@ public class MessageTransmit implements Runnable {
                 mSocket.connect(new InetSocketAddress(HOST, PORT) ,3000);
             }
 
-            mReader = new BufferedReader(new InputStreamReader(mSocket.getInputStream()));
-            mWriter = mSocket.getOutputStream();
+            mInputStream = mSocket.getInputStream();
+            mReader = new BufferedReader(new InputStreamReader(mInputStream));
+            mOutputStream = mSocket.getOutputStream();
 
-            Thread t = new RecvThread();
+            Thread t = new MessageReceiverThread();
             t.start();
-
-            Looper.prepare();
-            Looper.loop();
         } catch (Exception e) {
             Log.e(TAG, "Error occurs when connecting the socket", e);
             try {
@@ -54,61 +54,57 @@ public class MessageTransmit implements Runnable {
         }
     }
 
-    public Handler mRecvHandler = new Handler() {
+    public Handler mSendMessageHandler = new Handler() {
         @Override
         public void handleMessage(Message message) {
 //            Log.d(TAG, "handle message:" + message.obj);
 
-            String messageToSend = message.obj.toString() + "\n";
+            String messageToSend = message.obj.toString();
 
             try {
                 byte[] bytes = MessageTransmit.addLengthToBytes(messageToSend.getBytes());
-                Log.d(TAG,"MSG:" + new String(bytes));
-                mWriter.write(bytes);
+                Log.d(TAG,"SEND_MSG:" + new String(bytes));
+                mOutputStream.write(bytes);
             } catch (Exception e) {
-                Log.e(TAG, "Error occurs when writing data with mWriter through the socket", e);
+                Log.e(TAG, "Error occurs when writing data with mOutputStream through the socket", e);
                 try {
-                    mWriter.close();
+                    mOutputStream.close();
                 } catch (IOException e1) {
-                    Log.e(TAG, "Error occurs when closing the mWriter", e);
+                    Log.e(TAG, "Error occurs when closing the mOutputStream", e);
                 }
             }
         }
     };
 
-    private class RecvThread extends Thread {
-        @Override
-        public void run() {
-            try {
-                String content = null;
-                while (true) {
-                    if ((content = mReader.readLine()) != null) {
-                        byte[] bytes = MessageTransmit.removeLengthFromBytes(content.getBytes("UTF-8"));
-                        Message msg = Message.obtain();
-                        msg.obj = new String(bytes);
-                        Log.d(TAG,"MSG:" + msg.obj.toString());
-//                        Log.d(TAG, "Received Message In MessageTransmit:" + content);
-                        MainActivity.mHandler.sendMessage(msg);
-                    }
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Error occurs when reading data from mReader of the socket", e);
-                try {
-                    mReader.close();
-                } catch (IOException e1) {
-                    Log.e(TAG, "Error occurs when closing the mReader", e);
-                }
-            }
-        }
+    public static int bytesToInt(byte[] bytes) {
+        int result;
+        result = (int) (((bytes[0] & 0xFF) << 24)
+                | ((bytes[1] & 0xFF) << 16)
+                | ((bytes[2] & 0xFF) << 8)
+                | (bytes[3] & 0xFF));
+
+        return result;
+    }
+
+    public static byte[] intToBytes(int i) {
+        byte[] result = new byte[4];
+        result[0] = (byte)((i >> 24) & 0xFF);
+        result[1] = (byte)((i >> 16) & 0xFF);
+        result[2] = (byte)((i >> 8) & 0xFF);
+        result[3] = (byte)(i & 0xFF);
+
+        return result;
     }
 
     public static byte[] addLengthToBytes(byte[] bytes) {
         int length = bytes.length;
-        byte[] lengthBytes = MessageTransmit.intToByteArray4(length);
+        Log.d(TAG, "Data Length to send:" + length);
+        byte[] lengthBytes = MessageTransmit.intToBytes(length);
+        Log.d(TAG,"Data Length Parsed:" + MessageTransmit.bytesToInt(lengthBytes));
 
         byte[] result = new byte[lengthBytes.length + length];
-        System.arraycopy(lengthBytes, 0, result, 0, lengthBytes.length);
-        System.arraycopy(bytes, 0, result, lengthBytes.length, bytes.length);
+        System.arraycopy(lengthBytes, 0, result, 0, 4);
+        System.arraycopy(bytes, 0, result, 4, bytes.length);
 
         return result;
     }
@@ -120,13 +116,57 @@ public class MessageTransmit implements Runnable {
         return result;
     }
 
-    public static byte[] intToByteArray4(int i) {
-        byte[] result = new byte[4];
-        result[0] = (byte)((i >> 24) & 0xFF);
-        result[1] = (byte)((i >> 16) & 0xFF);
-        result[2] = (byte)((i >> 8) & 0xFF);
-        result[3] = (byte)(i & 0xFF);
+    /* 定义一个消息接收的内部类，专门负责处理接收到的消息 */
+    private class MessageReceiverThread extends Thread {
+        @Override
+        public void run() {
+            try {
+//                while (true) {
+                    String content = null;
+                    byte[] headerBytes = new byte[4];
+                    int dataLength = 0;
 
-        return result;
+                    if (mInputStream.read(headerBytes, 0, 4) != -1) {
+                        dataLength = MessageTransmit.bytesToInt(headerBytes);
+                        Log.d(TAG,"Data Received length is:" + dataLength);
+                    }
+
+                    byte[] dataBytes = new byte[dataLength];
+                    if (mInputStream.read(dataBytes, 0, dataLength) != -1) {
+                        Message msg = Message.obtain();
+                        msg.obj = new String(dataBytes);
+                        Log.d(TAG,"RECV_MSG:" + msg.obj.toString());
+//                        Log.d(TAG, "Received Message In MessageTransmit:" + content);
+                        MainActivity.mHandler.sendMessage(msg);
+                    }
+//                }
+//            while (true) {
+//                Log.d(TAG, "Message Received");
+//            //                for (int i = 0; i < 4; i++) {
+//            //                    mInputStream.read();
+//            //                }
+//
+//                int length;
+//                byte[] totalDataBytes = new byte[2048];
+//                while ((length = mInputStream.read(totalDataBytes, 4, 2048)) != -1) {
+//                    Log.d(TAG, "Read Length:" + length);
+//                }
+//
+//                Message msg = Message.obtain();
+//                msg.obj = new String(totalDataBytes);
+//                Log.d(TAG,"RECV_MSG:" + msg.obj.toString());
+//            //                        Log.d(TAG, "Received Message In MessageTransmit:" + content);
+//                MainActivity.mHandler.sendMessage(msg);
+//            }
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error occurs when reading data from mReader of the socket", e);
+                try {
+                    mReader.close();
+                } catch (IOException e1) {
+                    Log.e(TAG, "Error occurs when closing the mReader", e);
+                }
+            }
+        }
     }
 }

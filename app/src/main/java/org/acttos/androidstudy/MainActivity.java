@@ -2,6 +2,7 @@ package org.acttos.androidstudy;
 
 import android.nfc.Tag;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
@@ -22,25 +23,20 @@ public class MainActivity extends AppCompatActivity {
     final static String TAG = "MainActivity";
     private MessageTransmit mMessageTransmit;
 
+    private static String token = "6e7de5f465a4011a42b8a8241ba05dbe";
+    private static long roomId = 140;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
-                .detectDiskReads().detectDiskWrites().detectNetwork()
-                .penaltyLog().build());
-        StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder()
-                .detectLeakedSqlLiteObjects().detectLeakedClosableObjects()
-                .penaltyLog().penaltyDeath().build());
 
         Button connectButton = this.findViewById(R.id.connect_button);
         connectButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Log.d(TAG, "ConnectButton clicked.");
-                mMessageTransmit = new MessageTransmit();
-                new Thread(mMessageTransmit).start();
+                new Thread(networkTask).start();
             }
         });
 
@@ -49,13 +45,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "UpButton clicked.");
-                ControlCommand command = ControlCommand.generateCommand("token", 100241, ControlCommandEvent.Forward);
+                ControlCommand command = ControlCommand.generateCommand(MainActivity.token, MainActivity.roomId, ControlCommandEvent.Forward);
                 String JSON = command.JSONString();
 
                 Message message = Message.obtain();
                 message.obj = JSON;
                 Log.d(TAG, "Out Msg:" +  message.obj.toString());
-                mMessageTransmit.mRecvHandler.sendMessage(message);
+                mMessageTransmit.mSendMessageHandler.sendMessage(message);
 
 //                new Thread(mMessageSender).start();
             }
@@ -66,13 +62,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "DownButton clicked.");
-                ControlCommand command = ControlCommand.generateCommand("token", 100241, ControlCommandEvent.Backward);
+                ControlCommand command = ControlCommand.generateCommand(MainActivity.token, MainActivity.roomId, ControlCommandEvent.Backward);
                 String JSON = command.JSONString();
 
                 Message message = Message.obtain();
                 message.obj = JSON;
                 Log.d(TAG, "Out Msg:" +  message.obj.toString());
-                mMessageTransmit.mRecvHandler.sendMessage(message);
+                mMessageTransmit.mSendMessageHandler.sendMessage(message);
             }
         });
 
@@ -81,13 +77,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "LeftButton clicked.");
-                ControlCommand command = ControlCommand.generateCommand("token", 100241, ControlCommandEvent.Left);
+                ControlCommand command = ControlCommand.generateCommand(MainActivity.token, MainActivity.roomId, ControlCommandEvent.Left);
                 String JSON = command.JSONString();
 
                 Message message = Message.obtain();
                 message.obj = JSON;
                 Log.d(TAG, "Out Msg:" +  message.obj.toString());
-                mMessageTransmit.mRecvHandler.sendMessage(message);
+                mMessageTransmit.mSendMessageHandler.sendMessage(message);
             }
         });
 
@@ -96,13 +92,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "RightButton clicked.");
-                ControlCommand command = ControlCommand.generateCommand("token", 100241, ControlCommandEvent.Right);
+                ControlCommand command = ControlCommand.generateCommand(MainActivity.token, MainActivity.roomId, ControlCommandEvent.Right);
                 String JSON = command.JSONString();
 
                 Message message = Message.obtain();
                 message.obj = JSON;
                 Log.d(TAG, "Out Msg:" +  message.obj.toString());
-                mMessageTransmit.mRecvHandler.sendMessage(message);
+                mMessageTransmit.mSendMessageHandler.sendMessage(message);
             }
         });
 
@@ -111,13 +107,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Log.d(TAG, "Catch Button Clicked.");
-                ControlCommand command = ControlCommand.generateCommand("token", 100241, ControlCommandEvent.Catch);
+                ControlCommand command = ControlCommand.generateCommand(MainActivity.token, MainActivity.roomId, ControlCommandEvent.Catch);
                 String JSON = command.JSONString();
 
                 Message message = Message.obtain();
                 message.obj = JSON;
                 Log.d(TAG, "Out Msg:" +  message.obj.toString());
-                mMessageTransmit.mRecvHandler.sendMessage(message);
+                mMessageTransmit.mSendMessageHandler.sendMessage(message);
             }
         });
     }
@@ -141,8 +137,17 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "Rcv Msg:" + JSON);
 
             ControlCommand command = ControlCommand.commandFromJSON(JSON);
+        }
+    };
 
+    Runnable networkTask = new Runnable() {
 
+        @Override
+        public void run() {
+            Looper.prepare();
+            mMessageTransmit = new MessageTransmit();
+            new Thread(mMessageTransmit).start();
+            Looper.loop();
         }
     };
 }
