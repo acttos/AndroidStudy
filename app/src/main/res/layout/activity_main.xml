@@ -11,6 +11,14 @@
         android:layout_height="match_parent">
 
         <Button
+            android:id="@+id/connect_button"
+            android:layout_width="120dp"
+            android:layout_height="60dp"
+            android:layout_above="@id/up_button"
+            android:text="Connect"
+            android:layout_centerHorizontal="true" />
+
+        <Button
             android:id="@+id/catch_button"
             android:layout_width="60dp"
             android:layout_height="60dp"
